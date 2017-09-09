@@ -40,7 +40,7 @@ while getopts 'hs:d' OPT; do
 done
 
 log_debug(){
-    [ ! -z $_d ] && echo $@
+    [ $_d -eq 1 ] && echo $@
 }
 
 varsfile=$(mktemp /tmp/varsfile.XXX)
@@ -55,23 +55,32 @@ sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n 's|\(\w\)\s*<\(\w\+\)>\s*.*
 sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n '/\w\s*<\w\+>/! s|\(\w\)\s*.*\[default:\s*\(.*\)\]|_\1=\2|p' >> $defaults
 
 log_debug content of varsfile
-[ ! -z $_d ] && cat $varsfile && echo
+[ $_d -eq 1 ] && cat $varsfile && echo
 
 log_debug content of defaults
-[ ! -z $_d ] && cat $defaults && echo
+[ $_d -eq 1 ] && cat $defaults && echo
 
 exec 5<&1
 exec 1> ./tmpfile
 
-if [ $(cat $defaults | wc -l) -gt 0 ]; then
+variables_n=$(cat $varsfile | wc -l)
+defaults_n=$(cat $defaults | wc -l)
+
+if [ ${defaults_n} -gt 0 ]; then
     echo "# Default values"
     cat $defaults
 fi
 
+if [ ${defaults_n} -lt ${variables_n} ]; then
 cat << EOF
 
 # No-arguments is not allowed
 [ \$# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' \$0 && exit 1
+EOF
+
+fi
+
+cat << EOF
 
 # Parsing flags and arguments
 while getopts 'h${flaglist}' OPT; do
