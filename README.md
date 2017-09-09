@@ -5,20 +5,17 @@ Getopt smart generator from HELP message in bash
 
 This work is strongly inspired by [Docopt](http://docopt.org/) Command-line interface description language.
 
-I am a long time user of Docopt for Python and there is a version for Bash as well,
-but I do not like depending on external libraries at runtime for bash scripts.
-**Optgen**, instead, works at write time, autogenerating the code you need to manage the input
-arguments inside the script itself.
+I am a long time user of Docopt for Python and there is a version for Bash as well, but I do not like depending on external libraries at runtime when talking about bash scripts.
+**Optgen**, instead, works at write time, autogenerating the code that can be pasted inside the script itself.
 
-NOTE: if *xclip* is installed in your system, Optgen's output is automatically copied in your
-system clipbord for faster pasting in your script.
+NOTE: if *xclip* is installed in your system, optgen's output is saved in the system clipbord as well.
 
 
 # How it works
 
 If your bash script contains a standard *usage* description but with double comment sign (##)
-at the beginning of each line you are done. Optgen reads it and generates the *getopt* code
-out your script's options
+at the beginning of each line you are done. Optgen will read it and generate the *getopt* code
+out your script's options.
 
 
 # How to use it
@@ -29,7 +26,7 @@ out your script's options
          -s <script_path> The path to the script to be parsed
          -d               Enable debug logs [default:0]
 
-as exampe, consider a script with this usage messge:
+as example, consider a script with this usage messge:
 
     ## Test script to show how optgen.sh works
     ## usage: yourscript ... <- this line is actually ignored
