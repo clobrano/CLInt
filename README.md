@@ -83,3 +83,13 @@ arguments have a default value
     # No-arguments is not allowed
     [ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' $0 && exit 1
  
+so, if you run test-script.sh without arguments (as well as with -h flag) you'll get:
+
+    $ ./test-script.sh 
+    Test script to show how optgen.sh works
+    usage: yourscript ... <- this line is actually ignored
+    options:    <- this is the important part
+         -a <a_value>   flag with argument. It's value is stored in "$_a_value"
+         -b             no-argument flag. It's value (0 or 1) is stored in "$_b" 
+         -c <c_value>   like flag -a, but with a default value "ok" [default: ok]
+         -d             like flag -b, but with a default value "0" [default: 0]
