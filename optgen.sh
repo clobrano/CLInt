@@ -12,7 +12,13 @@
 which xclip > /dev/null
 do_xclip=$?
 
+# Default values
+_d=0
+
+# No-arguments is not allowed
 [ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' $0 && exit 1
+
+# Parsing flags and arguments
 while getopts 'hs:d' OPT; do
     case $OPT in
         h)
@@ -33,7 +39,7 @@ while getopts 'hs:d' OPT; do
     esac
 done
 
-dlog(){
+log_debug(){
     [ ! -z $_d ] && echo $@
 }
 
@@ -48,10 +54,10 @@ defaults=$(mktemp /tmp/defaults.XXX)
 sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n 's|\(\w\)\s*<\(\w\+\)>\s*.*\[default:\s*\(.*\)\]|_\2=\3|p' > $defaults
 sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n '/\w\s*<\w\+>/! s|\(\w\)\s*.*\[default:\s*\(.*\)\]|_\1=\2|p' >> $defaults
 
-dlog content of varsfile
+log_debug content of varsfile
 [ ! -z $_d ] && cat $varsfile && echo
 
-dlog content of defaults
+log_debug content of defaults
 [ ! -z $_d ] && cat $defaults && echo
 
 exec 5<&1
