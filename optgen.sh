@@ -8,10 +8,6 @@
 ##      options:
 ##           -s <script_path> The path to the script to be parsed
 ##           -d               Enable debug logs [default:0]
-
-which xclip > /dev/null
-do_xclip=$?
-
 # Default values
 _d=0
 
@@ -39,47 +35,93 @@ while getopts 'hs:d' OPT; do
     esac
 done
 
-log_debug(){
-    [ $_d -eq 1 ] && echo $@
-}
+# PARSE HELP MESSAGE ----------------------------------------------------------------
+BOOLS_REGEX='/<\w+>/! s|^##\s*-(\w)\s*.*|\1 _\1=1|p'
+VALUES_REGEX='s|^##\s*-(\w).*<(\w+)>|\1: _\2=$OPTARG|p'
+DEFAULTS_BOOLS_REGEX='/<\w+>/! s|^##\s*-(\w)\s*.*\[default:\s*(.*)\]|_\1=\2|p'
+DEFAULTS_VALUES_REGEX='s|^##.*<(\w+)>.*\[default:\s*(.*)\]|_\1=\2|p'
+LONG_TO_SHORT_MAP_REGEX='s_^##\s*(-\w),\s*(--\w+)\s*_\t"\2") set -- "$@" "\1";; |_p'
 
-varsfile=$(mktemp /tmp/varsfile.XXX)
-sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n 's|\(\w\)\s*<\(\w\+\)>|\1: _\2=$OPTARG|p' | cut -d ' ' -f1,2 > $varsfile
-sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n '/\w\s*<\w\+>/! s|\(\w\)|\1 _\1=1|p' | cut -d ' ' -f1,2 >> $varsfile
+variables=$(mktemp /tmp/variables.XXX)
+sed -nE "$BOOLS_REGEX" "$_script_path" | cut -d ' ' -f1,2 > $variables
+sed -nE "$VALUES_REGEX" "$_script_path" | cut -d ' ' -f1,2 >> $variables
 
-flaglist=`cut -d ' ' -f1  $varsfile | tr -d '\n'`
-variables=`cut -d ' ' -f2  $varsfile`
 
 defaults=$(mktemp /tmp/defaults.XXX)
-sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n 's|\(\w\)\s*<\(\w\+\)>\s*.*\[default:\s*\(.*\)\]|_\2=\3|p' > $defaults
-sed -n 's_^##\s*-\(.*\)_\1_p' $_script_path | sed -n '/\w\s*<\w\+>/! s|\(\w\)\s*.*\[default:\s*\(.*\)\]|_\1=\2|p' >> $defaults
+sed -nE "$DEFAULTS_BOOLS_REGEX" "$_script_path"  | cut -d ' ' -f1 > $defaults
+sed -nE "$DEFAULTS_VALUES_REGEX" "$_script_path" | cut -d ' ' -f1 >> $defaults
 
-log_debug content of varsfile
-[ $_d -eq 1 ] && cat $varsfile && echo
 
-log_debug content of defaults
-[ $_d -eq 1 ] && cat $defaults && echo
+long_to_short_map=$(mktemp /tmp/long_to_short_map.XXX)
+sed -nE "$LONG_TO_SHORT_MAP_REGEX" "$_script_path" | cut -d ' ' -f1-5 > $long_to_short_map
+
+[ $debug ] && {
+echo ----- variables
+cat $variables
+echo ----- defaults
+cat $defaults
+echo ----- long_to_short_map
+cat $long_to_short_map
+}
 
 exec 5<&1
 exec 1> ./tmpfile
 
-variables_n=$(cat $varsfile | wc -l)
+
+
+# GENERATE HEADER -------------------------------------------------------------------
+variables_n=$(cat $variables | wc -l)
 defaults_n=$(cat $defaults | wc -l)
 
-if [ ${defaults_n} -gt 0 ]; then
+[ ${defaults_n} -gt 0 ] && {
     echo "# Default values"
     cat $defaults
-fi
+}
 
-if [ ${defaults_n} -lt ${variables_n} ]; then
+# Allow no-arguments only if all variables have default values
+[ ${defaults_n} -lt ${variables_n} ] && {
 cat << EOF
 
 # No-arguments is not allowed
 [ \$# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' \$0 && exit 1
 EOF
+}
 
-fi
 
+
+# CONVERT LONG OPTIONS INTO SHORT ---------------------------------------------------
+
+cat <<EOF
+
+# Converting long-options into short ones
+for arg in "\$@"; do
+  shift
+  case "\$arg" in
+EOF
+
+IFS=$'|'       # make newline the only separator
+for j in $(cat $long_to_short_map); do
+    echo $j
+done
+cat << EOF
+        *) set -- "\$@" "\$arg"
+  esac
+done
+EOF
+
+
+# GENERATE FLAG ERROR function ------------------------------------------------------
+
+cat << EOF
+
+function print_illegal() {
+    echo Unexpected flag in command line \"\$@\"
+}
+EOF
+
+# GENERATE OPTGETS CODE -------------------------------------------------------------
+
+flaglist=`cut -d ' ' -f1  $variables | tr -d '\n'`
 cat << EOF
 
 # Parsing flags and arguments
@@ -91,8 +133,8 @@ while getopts 'h${flaglist}' OPT; do
             ;;
 EOF
 
-IFS=$'\n'       # make newlines the only separator
-for j in $(cat $varsfile)
+IFS=$'\n'       # make newline the only separator
+for j in $(cat $variables)
 do
     flag=$(echo $j | cut -c1)
     var=$(echo $j | cut -d' ' -f2)
@@ -105,7 +147,7 @@ done
 
 
 cat << EOF
-        \?)
+        \?) print_illegal \$@ >&2;
             echo "---"
             sed -ne 's/^## \(.*\)/\1/p' \$0
             exit 1
@@ -116,6 +158,12 @@ EOF
 
 # Show result in stdout
 cat ./tmpfile >&5
+
+which xclip > /dev/null
+do_xclip=$?
+
+[ $do_xclip ] && {
 # Copy result in system clipboard
 cat ./tmpfile | xclip
 cat ./tmpfile | xclip -sel clip
+}
