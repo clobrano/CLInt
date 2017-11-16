@@ -6,34 +6,46 @@
 ##      usage: getopt.sh [options]
 ##
 ##      options:
-##           -s <script_path> The path to the script to be parsed
-##           -d               Enable debug logs [default:0]
+##           -s, --script <path> The path to the script to be parsed
+##           -d, --debug         Enable debug logs [default:0]
+
+# GENERATED_CODE: start
 # Default values
-_d=0
+_debug=0
 
 # No-arguments is not allowed
 [ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' $0 && exit 1
 
+# Converting long-options into short ones
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--script") set -- "$@" "-s";;
+    "--debug") set -- "$@" "-d";;
+    *) set -- "$@" "$arg"
+  esac
+done
+
+function print_illegal() {
+    echo Unexpected flag in command line \"$@\"
+}
+
 # Parsing flags and arguments
-while getopts 'hs:d' OPT; do
+while getopts 'hds:' OPT; do
     case $OPT in
-        h)
-            sed -ne 's/^## \(.*\)/\1/p' $0
-            exit 1
-            ;;
-        s)
-            _script_path=$OPTARG
-            ;;
-        d)
-            _d=1
-            ;;
-        \?)
+        h) sed -ne 's/^## \(.*\)/\1/p' $0
+           exit 1 ;;
+        d) _debug=1 ;;
+        s) _script=$OPTARG ;;
+        \?) print_illegal $@ >&2;
             echo "---"
             sed -ne 's/^## \(.*\)/\1/p' $0
             exit 1
             ;;
     esac
 done
+# GENERATED_CODE: end
+
 
 # PARSE HELP MESSAGE ----------------------------------------------------------------
 BOOLS_SHORT_REGEX='/<\w+>|--\w+/! s|^##\s*-(\w)\s*.*|\1 _\1=1|p'
@@ -50,23 +62,23 @@ LONG_TO_SHORT_MAP_REGEX='s_^##\s*(-\w),\s*(--\w+)\s*_"\2") set -- "$@" "\1";; |_
 
 
 variables=$(mktemp /tmp/variables.XXX)
-sed -nE "$BOOLS_SHORT_REGEX"  "$_script_path" | cut -d ' ' -f1,2 > $variables
-sed -nE "$BOOLS_LONG_REGEX"   "$_script_path" | cut -d ' ' -f1,2 >> $variables
-sed -nE "$VALUES_SHORT_REGEX" "$_script_path" | cut -d ' ' -f1,2 >> $variables
-sed -nE "$VALUES_LONG_REGEX"  "$_script_path" | cut -d ' ' -f1,2 >> $variables
+sed -nE "$BOOLS_SHORT_REGEX"  "$_script" | cut -d ' ' -f1,2 > $variables
+sed -nE "$BOOLS_LONG_REGEX"   "$_script" | cut -d ' ' -f1,2 >> $variables
+sed -nE "$VALUES_SHORT_REGEX" "$_script" | cut -d ' ' -f1,2 >> $variables
+sed -nE "$VALUES_LONG_REGEX"  "$_script" | cut -d ' ' -f1,2 >> $variables
 
 
 defaults=$(mktemp /tmp/defaults.XXX)
-sed -nE "$DEFAULTS_BOOLS_SHORT_REGEX"  "$_script_path" | cut -d ' ' -f1 > $defaults
-sed -nE "$DEFAULTS_BOOLS_LONG_REGEX"   "$_script_path" | cut -d ' ' -f1 >> $defaults
-sed -nE "$DEFAULTS_VALUES_SHORT_REGEX" "$_script_path" | cut -d ' ' -f1 >> $defaults
-sed -nE "$DEFAULTS_VALUES_LONG_REGEX"  "$_script_path" | cut -d ' ' -f1 >> $defaults
+sed -nE "$DEFAULTS_BOOLS_SHORT_REGEX"  "$_script" | cut -d ' ' -f1 > $defaults
+sed -nE "$DEFAULTS_BOOLS_LONG_REGEX"   "$_script" | cut -d ' ' -f1 >> $defaults
+sed -nE "$DEFAULTS_VALUES_SHORT_REGEX" "$_script" | cut -d ' ' -f1 >> $defaults
+sed -nE "$DEFAULTS_VALUES_LONG_REGEX"  "$_script" | cut -d ' ' -f1 >> $defaults
 
 
 long_to_short_map=$(mktemp /tmp/long_to_short_map.XXX)
-sed -nE "$LONG_TO_SHORT_MAP_REGEX" "$_script_path" | cut -d ' ' -f1-5 > $long_to_short_map
+sed -nE "$LONG_TO_SHORT_MAP_REGEX" "$_script" | cut -d ' ' -f1-5 > $long_to_short_map
 
-[ $_d = 1 ] && {
+[ $_debug = 1 ] && {
     echo ----- variables
     cat $variables
     echo ----- defaults
@@ -97,7 +109,6 @@ cat << EOF
 [ \$# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' \$0 && exit 1
 EOF
 }
-
 
 
 # CONVERT LONG OPTIONS INTO SHORT ---------------------------------------------------
