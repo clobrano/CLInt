@@ -36,38 +36,49 @@ while getopts 'hs:d' OPT; do
 done
 
 # PARSE HELP MESSAGE ----------------------------------------------------------------
-BOOLS_REGEX='/<\w+>/! s|^##\s*-(\w)\s*.*|\1 _\1=1|p'
-VALUES_REGEX='s|^##\s*-(\w).*<(\w+)>|\1: _\2=$OPTARG|p'
-DEFAULTS_BOOLS_REGEX='/<\w+>/! s|^##\s*-(\w)\s*.*\[default:\s*(.*)\]|_\1=\2|p'
-DEFAULTS_VALUES_REGEX='s|^##.*<(\w+)>.*\[default:\s*(.*)\]|_\1=\2|p'
-LONG_TO_SHORT_MAP_REGEX='s_^##\s*(-\w),\s*(--\w+)\s*_\t"\2") set -- "$@" "\1";; |_p'
+BOOLS_SHORT_REGEX='/<\w+>|--\w+/! s|^##\s*-(\w)\s*.*|\1 _\1=1|p'
+BOOLS_LONG_REGEX='/<\w+>/! s|^##\s*-(\w), --(\w+)\s*.*|\1 _\2=1|p'
+VALUES_SHORT_REGEX='/--\w+/! s|^##\s*-(\w).*<(\w+)>|\1: _\2=$OPTARG|p'
+VALUES_LONG_REGEX='s|^##\s*-(\w), --(\w+).*<\w+>|\1: _\2=$OPTARG|p'
+
+DEFAULTS_BOOLS_SHORT_REGEX='/<\w+>|--\w+/! s|^##\s*-(\w)\s*.*\[default:\s*(.*)\]|_\1=\2|p'
+DEFAULTS_BOOLS_LONG_REGEX='/<\w+>/! s|^##\s*-\w, --(\w+)\s*.*\[default:\s*(.*)\]|_\1=\2|p'
+DEFAULTS_VALUES_SHORT_REGEX='/--\w+/! s|^##.*<(\w+)>.*\[default:\s*(.*)\]|_\1=\2|p'
+DEFAULTS_VALUES_LONG_REGEX='s|^##\s*-\w, --(\w+)\s*<\w+>.*\[default:\s*(.*)\]|_\1=\2|p'
+
+LONG_TO_SHORT_MAP_REGEX='s_^##\s*(-\w),\s*(--\w+)\s*_"\2") set -- "$@" "\1";; |_p'
+
 
 variables=$(mktemp /tmp/variables.XXX)
-sed -nE "$BOOLS_REGEX" "$_script_path" | cut -d ' ' -f1,2 > $variables
-sed -nE "$VALUES_REGEX" "$_script_path" | cut -d ' ' -f1,2 >> $variables
+sed -nE "$BOOLS_SHORT_REGEX"  "$_script_path" | cut -d ' ' -f1,2 > $variables
+sed -nE "$BOOLS_LONG_REGEX"   "$_script_path" | cut -d ' ' -f1,2 >> $variables
+sed -nE "$VALUES_SHORT_REGEX" "$_script_path" | cut -d ' ' -f1,2 >> $variables
+sed -nE "$VALUES_LONG_REGEX"  "$_script_path" | cut -d ' ' -f1,2 >> $variables
 
 
 defaults=$(mktemp /tmp/defaults.XXX)
-sed -nE "$DEFAULTS_BOOLS_REGEX" "$_script_path"  | cut -d ' ' -f1 > $defaults
-sed -nE "$DEFAULTS_VALUES_REGEX" "$_script_path" | cut -d ' ' -f1 >> $defaults
+sed -nE "$DEFAULTS_BOOLS_SHORT_REGEX"  "$_script_path" | cut -d ' ' -f1 > $defaults
+sed -nE "$DEFAULTS_BOOLS_LONG_REGEX"   "$_script_path" | cut -d ' ' -f1 >> $defaults
+sed -nE "$DEFAULTS_VALUES_SHORT_REGEX" "$_script_path" | cut -d ' ' -f1 >> $defaults
+sed -nE "$DEFAULTS_VALUES_LONG_REGEX"  "$_script_path" | cut -d ' ' -f1 >> $defaults
 
 
 long_to_short_map=$(mktemp /tmp/long_to_short_map.XXX)
 sed -nE "$LONG_TO_SHORT_MAP_REGEX" "$_script_path" | cut -d ' ' -f1-5 > $long_to_short_map
 
-[ $debug ] && {
-echo ----- variables
-cat $variables
-echo ----- defaults
-cat $defaults
-echo ----- long_to_short_map
-cat $long_to_short_map
+[ $_d = 1 ] && {
+    echo ----- variables
+    cat $variables
+    echo ----- defaults
+    cat $defaults
+    echo ----- long_to_short_map
+    cat $long_to_short_map
 }
 
 exec 5<&1
 exec 1> ./tmpfile
 
-
+echo "# GENERATED_CODE: start"
 
 # GENERATE HEADER -------------------------------------------------------------------
 variables_n=$(cat $variables | wc -l)
@@ -101,10 +112,10 @@ EOF
 
 IFS=$'|'       # make newline the only separator
 for j in $(cat $long_to_short_map); do
-    echo $j
+echo $j
 done
 cat << EOF
-        *) set -- "\$@" "\$arg"
+  *) set -- "\$@" "\$arg"
   esac
 done
 EOF
@@ -127,10 +138,8 @@ cat << EOF
 # Parsing flags and arguments
 while getopts 'h${flaglist}' OPT; do
     case \$OPT in
-        h)
-            sed -ne 's/^## \(.*\)/\1/p' \$0
-            exit 1
-            ;;
+        h) sed -ne 's/^## \(.*\)/\1/p' \$0
+           exit 1 ;;
 EOF
 
 IFS=$'\n'       # make newline the only separator
@@ -139,9 +148,7 @@ do
     flag=$(echo $j | cut -c1)
     var=$(echo $j | cut -d' ' -f2)
     cat << EOF
-        $flag)
-            $var
-            ;;
+        $flag) $var ;;
 EOF
 done
 
@@ -154,6 +161,7 @@ cat << EOF
             ;;
     esac
 done
+# GENERATED_CODE: end
 EOF
 
 # Show result in stdout
