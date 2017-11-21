@@ -186,3 +186,4 @@ do_xclip=$?
 cat ./tmpfile | xclip
 cat ./tmpfile | xclip -sel clip
 }
+rm ./tmpfile
