@@ -14,12 +14,12 @@ NOTE: if *xclip* is installed in your system, CLInt's output is saved in the sys
 # How it works
 
 If your bash script contains a standard *usage* description but with double comment sign (##)
-at the beginning of each line you are done. CLInt will read it and auto-generate all the *getopt* code
+at the beginning of each line you are done. CLInt will read it and auto-generate all the *getopts* code
 necessary to manage your options.
 
 
 # How to use it
-  
+
     usage: clint.sh -s <script_path> [-d]
 
     options:
@@ -30,67 +30,74 @@ as example, consider a script with this usage messge:
 
     ## Test script to show how clint.sh works
     ##
-    ## usage: yourscript ...
+    ## usage: yourscript ... # the usual usage line message (CLInt ignores this part)
     ##
-    ## options: <- this is the important part
-    ##      -a <a_value>   flag with argument: its value is stored in variable named "$_a_value"
-    ##      -b             no-argument flag: its value (0 or 1) is stored in a variable "$_b" 
-    ##      -c <c_value>   like flag -a, but with a default value "ok" [default: ok]
-    ##      -d             like flag -b, but with a default value "0" [default: 0]
-    
+    ## options:              # The options part (CLInt parses this part. Be aware of the format)
+    ##      -f, --file <string>      Example of a valued flag. The flag's value is stored in a variable named "$_file"
+    ##      -d, --default <string>   Example of a valued flag with a default value (_this_is_the_default) [default: _this_is_the_default]
+    ##      -b, --boolean            Example of a no-argument (boolean) flag: its value (0 or 1) is stored in a variable named "$_boolean"
+    ##      -v, --verbose            Example of a no-argument (boolean) flag with a default value "0" [default: 0]
+
 Now, executing clint.sh you'll get:
-    
+
     $ clint.sh -s test-script.sh
 
+    # GENERATED_CODE: start
     # Default values
-    _c_value=ok
-    _d=0
-    
+    _verbose=0
+    _default=_this_is_the_default
+
     # No-arguments is not allowed
     [ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' $0 && exit 1
-    
+
+    # Converting long-options into short ones
+    for arg in "$@"; do
+      shift
+      case "$arg" in
+    "--file") set -- "$@" "-f";;
+    "--default") set -- "$@" "-d";;
+    "--boolean") set -- "$@" "-b";;
+    "--verbose") set -- "$@" "-v";;
+      *) set -- "$@" "$arg"
+      esac
+    done
+
+    function print_illegal() {
+        echo Unexpected flag in command line \"$@\"
+    }
+
     # Parsing flags and arguments
-    while getopts 'ha:c:bd' OPT; do
+    while getopts 'hbvf:d:' OPT; do
         case $OPT in
-            h)
-                sed -ne 's/^## \(.*\)/\1/p' $0
-                exit 1
-                ;;
-            a)
-                _a_value=$OPTARG
-                ;;
-            c)
-                _c_value=$OPTARG
-                ;;
-            b)
-                _b=1
-                ;;
-            d)
-                _d=1
-                ;;
-            \?)
+            h) sed -ne 's/^## \(.*\)/\1/p' $0
+               exit 1 ;;
+            b) _boolean=1 ;;
+            v) _verbose=1 ;;
+            f) _file=$OPTARG ;;
+            d) _default=$OPTARG ;;
+            \?) print_illegal $@ >&2;
                 echo "---"
                 sed -ne 's/^## \(.*\)/\1/p' $0
                 exit 1
                 ;;
         esac
     done
+    # GENERATED_CODE: end
 
 Note:
 
-The following part of the script has been added because not all the 
-arguments have a default value
+The following part of the script has been automatically added because *not all the arguments have a default value*.
 
     # No-arguments is not allowed
     [ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' $0 && exit 1
- 
-so, if you run test-script.sh without arguments (as well as with -h flag) you'll get:
 
-    $ ./test-script.sh 
+and it prevents the script to run without the mandatory arguments. As example, if you run the script with no args, you get
+
+    $ ./test-script.sh
     Test script to show how clint.sh works
-    usage: yourscript ...
-    options:    <- this is the important part
-         -a <a_value>   flag with argument. It's value is stored in "$_a_value"
-         -b             no-argument flag. It's value (0 or 1) is stored in "$_b" 
-         -c <c_value>   like flag -a, but with a default value "ok" [default: ok]
-         -d             like flag -b, but with a default value "0" [default: 0]
+    usage: yourscript ... # the usual usage line message (CLInt ignores this part)
+    options:              # The options part (CLInt parses this part. Be aware of the format)
+         -f, --file <string>      Example of a flag with argument. The flag's value is stored in a variable named "$_file"
+         -d, --default <string>   Example of a valued flag with a default value (_this_is_the_default) [default: _this_is_the_default]
+         -b, --boolean            Example of a no-argument (boolean) flag: its value (0 or 1) is stored in a variable named "$_boolean"
+         -v, --verbose            Example of a no-argument (boolean) flag with a default value "0" [default: 0]
