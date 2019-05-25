@@ -1,26 +1,26 @@
-# optgen.sh
-Getopt smart generator from HELP message in bash
+# CLInt
+CLInt is a smart CLI generator from HELP message for Bash scripts
 
 # Rationale
 
 This work is strongly inspired by [Docopt](http://docopt.org/) Command-line interface description language.
 
-I am a long time user of Docopt for Python and there is a version for Bash as well, but I do not like depending on external libraries at runtime when talking about bash scripts.
-**Optgen**, instead, works at write time, autogenerating the code that can be pasted inside the script itself.
+I am a long time user of Docopt for Python and there is a version for Bash as well, but I do not like depending on external libraries at runtime when dealing with bash scripts.
+**CLInt**, instead, works at write time, autogenerating the code that can be pasted inside the script itself.
 
-NOTE: if *xclip* is installed in your system, optgen's output is saved in the system clipbord as well.
+NOTE: if *xclip* is installed in your system, CLInt's output is saved in the system clipbord to speed up copy&paste into your script.
 
 
 # How it works
 
 If your bash script contains a standard *usage* description but with double comment sign (##)
-at the beginning of each line you are done. Optgen will read it and generate the *getopt* code
-out your script's options.
+at the beginning of each line you are done. CLInt will read it and auto-generate all the *getopt* code
+necessary to manage your options.
 
 
 # How to use it
   
-    usage: getopt.sh -s <script_path> [-d]
+    usage: clint.sh -s <script_path> [-d]
 
     options:
          -s <script_path> The path to the script to be parsed
@@ -28,8 +28,9 @@ out your script's options.
 
 as example, consider a script with this usage messge:
 
-    ## Test script to show how optgen.sh works
-    ## usage: yourscript ... <- this line is actually ignored
+    ## Test script to show how clint.sh works
+    ##
+    ## usage: yourscript ...
     ##
     ## options: <- this is the important part
     ##      -a <a_value>   flag with argument: its value is stored in variable named "$_a_value"
@@ -37,9 +38,9 @@ as example, consider a script with this usage messge:
     ##      -c <c_value>   like flag -a, but with a default value "ok" [default: ok]
     ##      -d             like flag -b, but with a default value "0" [default: 0]
     
-Now, executing optgen.sh you'll get:
+Now, executing clint.sh you'll get:
     
-    $ optgen.sh -s test-script.sh
+    $ clint.sh -s test-script.sh
 
     # Default values
     _c_value=ok
@@ -87,7 +88,7 @@ so, if you run test-script.sh without arguments (as well as with -h flag) you'll
 
     $ ./test-script.sh 
     Test script to show how optgen.sh works
-    usage: yourscript ... <- this line is actually ignored
+    usage: yourscript ...
     options:    <- this is the important part
          -a <a_value>   flag with argument. It's value is stored in "$_a_value"
          -b             no-argument flag. It's value (0 or 1) is stored in "$_b" 
