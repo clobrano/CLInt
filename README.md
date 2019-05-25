@@ -87,7 +87,7 @@ arguments have a default value
 so, if you run test-script.sh without arguments (as well as with -h flag) you'll get:
 
     $ ./test-script.sh 
-    Test script to show how optgen.sh works
+    Test script to show how clint.sh works
     usage: yourscript ...
     options:    <- this is the important part
          -a <a_value>   flag with argument. It's value is stored in "$_a_value"
