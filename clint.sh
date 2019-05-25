@@ -3,7 +3,7 @@
 ## Helper script to autogenerate getopts code out of the target script's help message
 ## The script must contain a usage description with '##' at the beginning of each line (that is, like this one)
 ##
-##      usage: getopt.sh [options]
+##      usage: clint.sh [options]
 ##
 ##      options:
 ##           -s, --script <path> The path to the script to be parsed
