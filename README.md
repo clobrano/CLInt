@@ -13,7 +13,7 @@ Scripts are usually copied into remote machines and shared easily without the ne
 
 # How it works
 
-Your bash script only needs a *usage* description (do you have a usage description, right?) **with double comment sign ## at the beginning of each line**, then CLInt parses it and auto-generate all the code necessary to manage your options.
+Your bash script only needs a *usage* description (do you have a usage description, right?) **with double comment sign ## at the beginning of each line**, then CLInt parses it and auto-generates all the code necessary to manage your options.
 
 
 # How to use it
