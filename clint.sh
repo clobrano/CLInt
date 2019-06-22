@@ -9,7 +9,7 @@
 ##           -s, --script <path> The path to the script to be parsed
 ##           -d, --debug         Enable debug logs [default:0]
 
-# GENERATED_CODE: start
+# CLInt GENERATED_CODE: start
 # Default values
 _debug=0
 
@@ -44,7 +44,7 @@ while getopts 'hds:' OPT; do
             ;;
     esac
 done
-# GENERATED_CODE: end
+# CLInt GENERATED_CODE: end
 
 
 # PARSE HELP MESSAGE ----------------------------------------------------------------
@@ -90,7 +90,7 @@ sed -nE "$LONG_TO_SHORT_MAP_REGEX" "$_script" | cut -d ' ' -f1-5 > $long_to_shor
 exec 5<&1
 exec 1> ./tmpfile
 
-echo "# GENERATED_CODE: start"
+echo "# CLInt GENERATED_CODE: start"
 
 # GENERATE HEADER -------------------------------------------------------------------
 variables_n=$(cat $variables | wc -l)
@@ -172,7 +172,7 @@ cat << EOF
             ;;
     esac
 done
-# GENERATED_CODE: end
+# CLInt GENERATED_CODE: end
 EOF
 
 # Show result in stdout
