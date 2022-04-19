@@ -91,6 +91,7 @@ exec 5<&1
 exec 1> ./tmpfile
 
 echo "# CLInt GENERATED_CODE: start"
+echo "# info: https://github.com/clobrano/CLInt.git"
 
 # GENERATE HEADER -------------------------------------------------------------------
 variables_n=$(cat $variables | wc -l)
