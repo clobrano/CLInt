@@ -14,7 +14,7 @@
 _debug=0
 
 # No-arguments is not allowed
-[ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' $0 && exit 1
+[ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' "$0" && exit 1
 
 # Converting long-options into short ones
 for arg in "$@"; do
@@ -27,19 +27,19 @@ for arg in "$@"; do
 done
 
 function print_illegal() {
-    echo Unexpected flag in command line \"$@\"
+    echo "[!] Unexpected flag in command line: $*"
 }
 
 # Parsing flags and arguments
 while getopts 'hds:' OPT; do
     case $OPT in
-        h) sed -ne 's/^## \(.*\)/\1/p' $0
+        h) sed -ne 's/^## \(.*\)/\1/p' "$0"
            exit 1 ;;
         d) _debug=1 ;;
         s) _script=$OPTARG ;;
-        \?) print_illegal $@ >&2;
+        \?) print_illegal "$@" >&2;
             echo "---"
-            sed -ne 's/^## \(.*\)/\1/p' $0
+            sed -ne 's/^## \(.*\)/\1/p' "$0"
             exit 1
             ;;
     esac
@@ -62,29 +62,29 @@ LONG_TO_SHORT_MAP_REGEX='s_^##\s*(-\w),\s*(--\w+)\s*_"\2") set -- "$@" "\1";; |_
 
 
 variables=$(mktemp /tmp/variables.XXX)
-sed -nE "$BOOLS_SHORT_REGEX"  "$_script" | cut -d ' ' -f1,2 > $variables
-sed -nE "$BOOLS_LONG_REGEX"   "$_script" | cut -d ' ' -f1,2 >> $variables
-sed -nE "$VALUES_SHORT_REGEX" "$_script" | cut -d ' ' -f1,2 >> $variables
-sed -nE "$VALUES_LONG_REGEX"  "$_script" | cut -d ' ' -f1,2 >> $variables
+sed -nE "$BOOLS_SHORT_REGEX"  "$_script" | cut -d ' ' -f1,2 > "$variables"
+sed -nE "$BOOLS_LONG_REGEX"   "$_script" | cut -d ' ' -f1,2 >> "$variables"
+sed -nE "$VALUES_SHORT_REGEX" "$_script" | cut -d ' ' -f1,2 >> "$variables"
+sed -nE "$VALUES_LONG_REGEX"  "$_script" | cut -d ' ' -f1,2 >> "$variables"
 
 
 defaults=$(mktemp /tmp/defaults.XXX)
-sed -nE "$DEFAULTS_BOOLS_SHORT_REGEX"  "$_script" | cut -d ' ' -f1 > $defaults
-sed -nE "$DEFAULTS_BOOLS_LONG_REGEX"   "$_script" | cut -d ' ' -f1 >> $defaults
-sed -nE "$DEFAULTS_VALUES_SHORT_REGEX" "$_script" | cut -d ' ' -f1 >> $defaults
-sed -nE "$DEFAULTS_VALUES_LONG_REGEX"  "$_script" | cut -d ' ' -f1 >> $defaults
+sed -nE "$DEFAULTS_BOOLS_SHORT_REGEX"  "$_script" | cut -d ' ' -f1 > "$defaults"
+sed -nE "$DEFAULTS_BOOLS_LONG_REGEX"   "$_script" | cut -d ' ' -f1 >> "$defaults"
+sed -nE "$DEFAULTS_VALUES_SHORT_REGEX" "$_script" | cut -d ' ' -f1 >> "$defaults"
+sed -nE "$DEFAULTS_VALUES_LONG_REGEX"  "$_script" | cut -d ' ' -f1 >> "$defaults"
 
 
 long_to_short_map=$(mktemp /tmp/long_to_short_map.XXX)
-sed -nE "$LONG_TO_SHORT_MAP_REGEX" "$_script" | cut -d ' ' -f1-5 > $long_to_short_map
+sed -nE "$LONG_TO_SHORT_MAP_REGEX" "$_script" | cut -d ' ' -f1-5 > "$long_to_short_map"
 
 [ $_debug = 1 ] && {
     echo ----- variables
-    cat $variables
+    cat "$variables"
     echo ----- defaults
-    cat $defaults
+    cat "$defaults"
     echo ----- long_to_short_map
-    cat $long_to_short_map
+    cat "$long_to_short_map"
 }
 
 exec 5<&1
@@ -94,20 +94,20 @@ echo "# CLInt GENERATED_CODE: start"
 echo "# info: https://github.com/clobrano/CLInt.git"
 
 # GENERATE HEADER -------------------------------------------------------------------
-variables_n=$(cat $variables | wc -l)
-defaults_n=$(cat $defaults | wc -l)
+variables_n=$(wc -l < "$variables")
+defaults_n=$(wc -l < "$defaults")
 
-[ ${defaults_n} -gt 0 ] && {
+[ "$defaults_n" -gt 0 ] && {
     echo "# Default values"
-    cat $defaults
+    cat "$defaults"
 }
 
 # Allow no-arguments only if all variables have default values
-[ ${defaults_n} -lt ${variables_n} ] && {
+[ "$defaults_n" -lt "$variables_n" ] && {
 cat << EOF
 
 # No-arguments is not allowed
-[ \$# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' \$0 && exit 1
+[ \$# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' "\$0" && exit 1
 EOF
 }
 
@@ -123,8 +123,8 @@ for arg in "\$@"; do
 EOF
 
 IFS=$'|'       # make newline the only separator
-for j in $(cat $long_to_short_map); do
-echo $j
+for j in $(cat "$long_to_short_map"); do
+echo "$j"
 done
 cat << EOF
   *) set -- "\$@" "\$arg"
@@ -138,27 +138,27 @@ EOF
 cat << EOF
 
 function print_illegal() {
-    echo Unexpected flag in command line \"\$@\"
+    echo "[!] Unexpected flag in command line \$*"
 }
 EOF
 
 # GENERATE OPTGETS CODE -------------------------------------------------------------
 
-flaglist=`cut -d ' ' -f1  $variables | tr -d '\n'`
+flaglist=$(cut -d ' ' -f1  "$variables" | tr -d '\n')
 cat << EOF
 
 # Parsing flags and arguments
 while getopts 'h${flaglist}' OPT; do
-    case \$OPT in
-        h) sed -ne 's/^## \(.*\)/\1/p' \$0
+    case "\$OPT" in
+        h) sed -ne 's/^## \(.*\)/\1/p' "\$0"
            exit 1 ;;
 EOF
 
 IFS=$'\n'       # make newline the only separator
-for j in $(cat $variables)
+for j in $(cat "$variables")
 do
-    flag=$(echo $j | cut -c1)
-    var=$(echo $j | cut -d' ' -f2)
+    flag=$(echo "$j" | cut -c1)
+    var=$(echo "$j" | cut -d' ' -f2)
     cat << EOF
         $flag) $var ;;
 EOF
@@ -166,9 +166,9 @@ done
 
 
 cat << EOF
-        \?) print_illegal \$@ >&2;
+        \?) print_illegal "\$@" >&2;
             echo "---"
-            sed -ne 's/^## \(.*\)/\1/p' \$0
+            sed -ne 's/^## \(.*\)/\1/p' "\$0"
             exit 1
             ;;
     esac
@@ -179,12 +179,8 @@ EOF
 # Show result in stdout
 cat ./tmpfile >&5
 
-which xclip > /dev/null
-do_xclip=$?
+if command -v wl-copy >/dev/null; then
+    wl-copy < ./tmpfile
+fi
 
-[ $do_xclip ] && {
-# Copy result in system clipboard
-cat ./tmpfile | xclip
-cat ./tmpfile | xclip -sel clip
-}
 rm ./tmpfile
